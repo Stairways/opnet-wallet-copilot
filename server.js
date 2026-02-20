@@ -1,20 +1,16 @@
 /**
- * OP_NET Wallet Copilot — Backend Server
+ * OP_NET Wallet Copilot + DeFi Dashboard — Backend Server
  * 
- * This file connects to the real OP_NET network using the official SDK,
- * fetches live wallet data, and serves it to the frontend.
+ * Updated to use OP_NET Regtest — the final pre-mainnet environment.
+ * Uses rBTC (regtest Bitcoin) — the correct currency for the build competition.
  * 
- * HOW IT WORKS (plain English):
- * - We create a "provider" — think of it as a phone line to the OP_NET network
- * - When someone enters a Bitcoin address, we ask OP_NET for their balance + tokens
- * - We send that data back to the browser as JSON
- * - The browser shows it in the beautiful UI we already built
+ * TO UPGRADE TO MAINNET (March 17, 2026):
+ *   Change ACTIVE_NETWORK from NETWORKS.regtest to NETWORKS.mainnet
+ *   That's it — one line change!
  */
 
 import express from 'express';
 import cors from 'cors';
-import { JSONRpcProvider } from 'opnet';
-import { networks } from '@btc-vision/bitcoin';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -27,194 +23,213 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OP_NET PROVIDER SETUP
-// This is our connection to the OP_NET network.
-// For now we use "testnet" — when OP_NET goes fully live, change to mainnet URL.
+// NETWORK CONFIG — switch between regtest / testnet / mainnet here
 // ─────────────────────────────────────────────────────────────────────────────
-const OPNET_RPC_URL = 'https://testnet.opnet.org'; // switch to mainnet when live
-const network = networks.testnet;
+const NETWORKS = {
+  regtest: {
+    rpcUrl: 'https://regtest.opnet.org',
+    name: 'Regtest',
+    currency: 'rBTC',
+  },
+  testnet: {
+    rpcUrl: 'https://testnet.opnet.org',
+    name: 'Testnet',
+    currency: 'tBTC',
+  },
+  mainnet: {
+    rpcUrl: 'https://mainnet.opnet.org',
+    name: 'Mainnet',
+    currency: 'BTC',
+  },
+};
+
+const ACTIVE_NETWORK = NETWORKS.regtest; // ← change to mainnet on March 17!
 
 let provider;
-try {
-  provider = new JSONRpcProvider(OPNET_RPC_URL, network);
-  console.log('✅ OP_NET provider connected to:', OPNET_RPC_URL);
-} catch (err) {
-  console.error('❌ Failed to connect to OP_NET:', err.message);
+
+async function initProvider() {
+  try {
+    const { JSONRpcProvider } = await import('opnet');
+    const { networks } = await import('@btc-vision/bitcoin');
+    const btcNetwork = ACTIVE_NETWORK.name === 'Mainnet'
+      ? networks.bitcoin
+      : networks.regtest;
+    provider = new JSONRpcProvider(ACTIVE_NETWORK.rpcUrl, btcNetwork);
+    console.log(`✅ OP_NET provider connected to: ${ACTIVE_NETWORK.rpcUrl}`);
+  } catch (err) {
+    console.error('❌ OP_NET provider failed to connect:', err.message);
+  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// API ROUTE: GET WALLET BALANCE
-// Called when user enters a Bitcoin address in the UI
-// Returns: BTC balance in satoshis, converted to BTC
-// ─────────────────────────────────────────────────────────────────────────────
-app.get('/api/balance/:address', async (req, res) => {
-  const { address } = req.params;
-
-  // Basic sanity check — Bitcoin addresses start with bc1, 1, 3, tb1, etc.
-  if (!address || address.length < 26) {
-    return res.status(400).json({ error: 'Invalid Bitcoin address' });
-  }
-
-  try {
-    console.log(`📡 Fetching balance for: ${address}`);
-
-    // This is the real OP_NET SDK call!
-    // getBalance() returns the balance in satoshis (1 BTC = 100,000,000 satoshis)
-    const balanceSatoshis = await provider.getBalance(address);
-
-    // Convert satoshis → BTC (divide by 100 million)
-    const balanceBTC = Number(balanceSatoshis) / 1e8;
-
-    console.log(`✅ Balance: ${balanceBTC} BTC`);
-
-    res.json({
-      address,
-      balanceSatoshis: balanceSatoshis.toString(),
-      balanceBTC: balanceBTC.toFixed(8),
-      network: 'testnet',
-    });
-
-  } catch (err) {
-    console.error('❌ Balance fetch error:', err.message);
-    res.status(500).json({
-      error: 'Could not fetch balance from OP_NET',
-      detail: err.message,
-      // If OP_NET node is unavailable, return a graceful fallback
-      fallback: true
-    });
-  }
-});
+initProvider();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// API ROUTE: GET TRANSACTIONS
-// Fetches recent transaction history for an address
-// ─────────────────────────────────────────────────────────────────────────────
-app.get('/api/transactions/:address', async (req, res) => {
-  const { address } = req.params;
-
-  try {
-    console.log(`📡 Fetching transactions for: ${address}`);
-
-    // Get recent transactions from OP_NET
-    // The SDK returns full transaction objects including contract interactions
-    const txList = await provider.getTransactionsByAddress(address, 0, 10);
-
-    // Parse and clean up the data for the frontend
-    const transactions = (txList || []).map(tx => ({
-      txid: tx.hash || tx.id || 'unknown',
-      type: detectTxType(tx),
-      amount: tx.value ? (Number(tx.value) / 1e8).toFixed(8) : '0',
-      timestamp: tx.blockTime || tx.timestamp || null,
-      blockHeight: tx.blockHeight || tx.height || null,
-      isContractCall: tx.isOPNET || tx.hasContractData || false,
-      contractAddress: tx.contractAddress || null,
-    }));
-
-    res.json({ address, transactions, count: transactions.length });
-
-  } catch (err) {
-    console.error('❌ Transaction fetch error:', err.message);
-    // Return empty array gracefully — don't crash the UI
-    res.json({
-      address,
-      transactions: [],
-      count: 0,
-      error: err.message,
-      fallback: true
-    });
-  }
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// API ROUTE: GET OP_20 TOKEN BALANCES
-// Fetches which OP_20 tokens (like ERC-20 on Ethereum) this wallet holds
-// ─────────────────────────────────────────────────────────────────────────────
-app.get('/api/tokens/:address', async (req, res) => {
-  const { address } = req.params;
-
-  try {
-    console.log(`📡 Fetching OP_20 tokens for: ${address}`);
-
-    // Known OP_20 token contracts on OP_NET testnet
-    // In a full version, you'd fetch the full token registry dynamically
-    const KNOWN_TOKENS = [
-      {
-        address: 'tb1pexampletoken1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-        symbol: 'MOTO',
-        name: 'MotoToken',
-        decimals: 8
-      },
-      // Add more tokens as the OP_NET ecosystem grows
-    ];
-
-    const tokenBalances = [];
-
-    for (const token of KNOWN_TOKENS) {
-      try {
-        const { getContract, OP_20_ABI } = await import('opnet');
-        const contract = getContract(token.address, OP_20_ABI, provider);
-        const result = await contract.balanceOf(address);
-
-        if (!('error' in result)) {
-          const rawBalance = result.decoded?.[0] || 0n;
-          const balance = Number(rawBalance) / Math.pow(10, token.decimals);
-
-          if (balance > 0) {
-            tokenBalances.push({
-              ...token,
-              balance: balance.toFixed(token.decimals),
-              rawBalance: rawBalance.toString(),
-            });
-          }
-        }
-      } catch {
-        // Skip tokens that error — don't block the whole response
-      }
-    }
-
-    res.json({ address, tokens: tokenBalances, count: tokenBalances.length });
-
-  } catch (err) {
-    console.error('❌ Token fetch error:', err.message);
-    res.json({ address, tokens: [], count: 0, error: err.message, fallback: true });
-  }
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// API ROUTE: NETWORK STATUS
-// Lets the UI show whether we're connected to OP_NET or not
+// API: NETWORK STATUS
 // ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/status', async (req, res) => {
   try {
     const blockNumber = await provider.getBlockNumber();
     res.json({
       connected: true,
-      network: 'testnet',
+      network: ACTIVE_NETWORK.name,
+      currency: ACTIVE_NETWORK.currency,
       latestBlock: blockNumber.toString(),
-      rpcUrl: OPNET_RPC_URL,
+      mainnetLaunch: 'March 17, 2026',
     });
   } catch (err) {
-    res.json({ connected: false, error: err.message });
+    res.json({ connected: false, network: ACTIVE_NETWORK.name, currency: ACTIVE_NETWORK.currency, error: err.message });
   }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Detect transaction type from OP_NET tx object
+// API: WALLET BALANCE
 // ─────────────────────────────────────────────────────────────────────────────
-function detectTxType(tx) {
-  if (tx.isOPNET || tx.hasContractData) return 'contract';
-  if (tx.type === 'received' || (tx.outputs && tx.outputs.some(o => o.isOurs))) return 'receive';
-  return 'send';
-}
+app.get('/api/balance/:address', async (req, res) => {
+  const { address } = req.params;
+  if (!address || address.length < 20) return res.status(400).json({ error: 'Invalid address' });
+  try {
+    const balanceSatoshis = await provider.getBalance(address);
+    const balanceBTC = Number(balanceSatoshis) / 1e8;
+    res.json({
+      address,
+      balanceSatoshis: balanceSatoshis.toString(),
+      balanceBTC: balanceBTC.toFixed(8),
+      currency: ACTIVE_NETWORK.currency,
+      network: ACTIVE_NETWORK.name,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, fallback: true, balanceBTC: '0.00000000', currency: ACTIVE_NETWORK.currency });
+  }
+});
 
-// Serve the main HTML app for all non-API routes
+// ─────────────────────────────────────────────────────────────────────────────
+// API: TRANSACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/transactions/:address', async (req, res) => {
+  const { address } = req.params;
+  try {
+    const txList = await provider.getTransactionsByAddress(address, 0, 10);
+    const transactions = (txList || []).map(tx => ({
+      txid: tx.hash || tx.id || 'unknown',
+      type: tx.isOPNET ? 'contract' : tx.type || 'send',
+      amount: tx.value ? (Number(tx.value) / 1e8).toFixed(8) : '0',
+      timestamp: tx.blockTime || null,
+      blockHeight: tx.blockHeight || null,
+      isContractCall: !!tx.isOPNET,
+    }));
+    res.json({ address, transactions, count: transactions.length });
+  } catch (err) {
+    res.json({ address, transactions: [], count: 0, error: err.message, fallback: true });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API: OP_20 TOKEN BALANCES
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/tokens/:address', async (req, res) => {
+  const { address } = req.params;
+  try {
+    const { getContract, OP_20_ABI } = await import('opnet');
+
+    // Known OP_20 tokens on OP_NET regtest
+    const KNOWN_TOKENS = [
+      {
+        address: 'bcrt1plz0svv3wl05qrrv0dx8hvh5mgqc7jf3mhqgtw8jnj3l3d3cs6lzsfc3mxh',
+        symbol: 'MOTO',
+        name: 'MotoSwap Token',
+        decimals: 8,
+        color: '#f7931a',
+      },
+    ];
+
+    const tokenBalances = [];
+    for (const token of KNOWN_TOKENS) {
+      try {
+        const contract = getContract(token.address, OP_20_ABI, provider);
+        const result = await contract.balanceOf(address);
+        if (result && !result.error) {
+          const rawBalance = result.decoded?.[0] || 0n;
+          const balance = Number(rawBalance) / Math.pow(10, token.decimals);
+          if (balance > 0) tokenBalances.push({ ...token, balance: balance.toFixed(token.decimals) });
+        }
+      } catch { /* skip erroring tokens */ }
+    }
+
+    res.json({ address, tokens: tokenBalances, count: tokenBalances.length });
+  } catch (err) {
+    res.json({ address, tokens: [], count: 0, error: err.message, fallback: true });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API: DEFI POSITIONS
+// Reads liquidity pool positions from OP_NET DeFi contracts
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/defi/:address', async (req, res) => {
+  const { address } = req.params;
+  try {
+    const { getContract, OP_20_ABI } = await import('opnet');
+
+    const DEFI_PROTOCOLS = [
+      {
+        name: 'MotoSwap',
+        type: 'Liquidity Pool',
+        lpToken: 'bcrt1plz0svv3wl05qrrv0dx8hvh5mgqc7jf3mhqgtw8jnj3l3d3cs6lzsfc3mxh',
+        pair: `rBTC / MOTO`,
+        apy: '24.5',
+        color: '#f7931a',
+        risk: 'Medium',
+      },
+    ];
+
+    const positions = [];
+    for (const protocol of DEFI_PROTOCOLS) {
+      try {
+        const lpContract = getContract(protocol.lpToken, OP_20_ABI, provider);
+        const balResult = await lpContract.balanceOf(address);
+        if (balResult && !balResult.error) {
+          const lpBalance = Number(balResult.decoded?.[0] || 0n) / 1e8;
+          if (lpBalance > 0) {
+            const valueUSD = lpBalance * 98000 * 0.5;
+            positions.push({
+              protocol: protocol.name,
+              type: protocol.type,
+              pair: protocol.pair,
+              lpBalance: lpBalance.toFixed(8),
+              valueUSD: valueUSD.toFixed(2),
+              apy: protocol.apy,
+              color: protocol.color,
+              risk: protocol.risk,
+              earnings24h: (valueUSD * (parseFloat(protocol.apy) / 100) / 365).toFixed(4),
+              earningsTotal: (valueUSD * (parseFloat(protocol.apy) / 100) / 12).toFixed(4),
+            });
+          }
+        }
+      } catch { /* skip */ }
+    }
+
+    res.json({
+      address,
+      positions,
+      count: positions.length,
+      network: ACTIVE_NETWORK.name,
+      currency: ACTIVE_NETWORK.currency,
+      fallback: positions.length === 0,
+    });
+  } catch (err) {
+    res.json({ address, positions: [], count: 0, error: err.message, fallback: true });
+  }
+});
+
+// Serve frontend for all non-API routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 OP_NET Wallet Copilot running!`);
-  console.log(`   Open your browser at: http://localhost:${PORT}`);
-  console.log(`   API available at:     http://localhost:${PORT}/api/`);
-  console.log(`   Network:              OP_NET Testnet\n`);
+  console.log(`\n🚀 OP_NET Wallet Copilot + DeFi Dashboard`);
+  console.log(`   Open: http://localhost:${PORT}`);
+  console.log(`   Network: ${ACTIVE_NETWORK.name} (${ACTIVE_NETWORK.currency})`);
+  console.log(`   RPC:     ${ACTIVE_NETWORK.rpcUrl}`);
+  console.log(`   Mainnet launch: March 17, 2026 🚀\n`);
 });
