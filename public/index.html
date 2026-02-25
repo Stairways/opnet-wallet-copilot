@@ -282,17 +282,27 @@ footer p{font-size:11px;color:var(--muted);}
 .built-badge{display:flex;align-items:center;gap:6px;background:rgba(247,147,26,0.07);
   border:1px solid rgba(247,147,26,0.2);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--btc);}
 
-/* ══ COMPETITION BADGE ══ */
-.comp-banner{background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(247,147,26,0.1));
-  border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:16px 20px;
-  display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
-.comp-badge{background:linear-gradient(135deg,var(--btc),var(--moto));padding:8px 14px;
-  border-radius:8px;font-weight:800;font-size:12px;color:#000;white-space:nowrap;}
-.comp-text h3{font-size:14px;font-weight:800;margin-bottom:2px;}
-.comp-text p{font-size:12px;color:var(--muted);}
-.comp-features{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;}
-.feat-chip{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:20px;
-  padding:3px 10px;font-size:10px;font-weight:700;color:var(--muted);}
+/* ══ QUOTES TICKER ══ */
+.quotes-ticker-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:0;overflow:hidden;position:relative;}
+.quotes-ticker-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--moto),var(--cat),var(--btc),var(--green));}
+.quotes-label{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);
+  text-transform:uppercase;padding:12px 20px 8px;border-bottom:1px solid var(--border);}
+.quotes-track-outer{overflow:hidden;padding:16px 0;position:relative;}
+.quotes-track-outer::before,.quotes-track-outer::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none;}
+.quotes-track-outer::before{left:0;background:linear-gradient(90deg,var(--card),transparent);}
+.quotes-track-outer::after{right:0;background:linear-gradient(270deg,var(--card),transparent);}
+.quotes-track{display:flex;gap:0;width:max-content;animation:quotesScroll 55s linear infinite;}
+.quotes-track:hover{animation-play-state:paused;}
+@keyframes quotesScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.quote-card{display:flex;flex-direction:column;gap:6px;padding:10px 24px;min-width:320px;max-width:380px;
+  border-right:1px solid var(--border);flex-shrink:0;}
+.quote-text{font-size:13px;line-height:1.55;color:var(--text);font-style:italic;}
+.quote-text::before{content:'"';color:var(--btc);font-size:18px;font-style:normal;margin-right:2px;}
+.quote-text::after{content:'"';color:var(--btc);font-size:18px;font-style:normal;margin-left:2px;}
+.quote-author{font-size:11px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px;}
+.quote-author em{font-style:normal;color:var(--moto);}
 
 /* ══ TOAST ══ */
 #toast{position:fixed;bottom:24px;right:24px;z-index:999;
@@ -334,6 +344,7 @@ footer p{font-size:11px;color:var(--muted);}
     <a href="#copilot">Copilot</a>
     <a href="#ecosystem">Ecosystem</a>
     <a href="#game">Game</a>
+    <a href="https://defibible.opnet.org" target="_blank" style="color:var(--btc)">DeFiBible ↗</a>
   </nav>
   <button class="conn-btn" onclick="connectWallet()">⚡ Connect Wallet</button>
 </header>
@@ -631,6 +642,11 @@ footer p{font-size:11px;color:var(--muted);}
       <div class="eco-ds">Complete tasks every 48h to earn points toward the mainnet airdrop.</div>
       <span class="eco-tg tg-gold">Airdrop</span>
     </a>
+    <a href="https://defibible.opnet.org" target="_blank" class="eco-card">
+      <div class="eco-icon">📜</div><div class="eco-nm">DeFiBible</div>
+      <div class="eco-ds">The complete knowledge base for Bitcoin DeFi on OP_NET. Learn, build and understand the ecosystem.</div>
+      <span class="eco-tg tg-btc">Knowledge</span>
+    </a>
   </div>
 </div>
 
@@ -678,21 +694,12 @@ footer p{font-size:11px;color:var(--muted);}
   </div>
 </div>
 
-<!-- COMPETITION BANNER -->
+<!-- QUOTES TICKER -->
 <div class="wrap" style="padding-bottom:32px;">
-  <div class="comp-banner">
-    <span class="comp-badge">🏆 COMPETITION ENTRY</span>
-    <div class="comp-text">
-      <h3>OP_NET Ecosystem Dashboard — Built for Bitcoin DeFi</h3>
-      <p>Live market data · MotoSwap integration · AI Copilot · MotoCat Pinball · Full ecosystem hub</p>
-    </div>
-    <div class="comp-features">
-      <span class="feat-chip">Live Charts</span>
-      <span class="feat-chip">Swap Widget</span>
-      <span class="feat-chip">AI Copilot</span>
-      <span class="feat-chip">Pinball Game</span>
-      <span class="feat-chip">Ecosystem Hub</span>
-      <span class="feat-chip">Mobile Ready</span>
+  <div class="quotes-ticker-wrap">
+    <div class="quotes-label">💬 FROM THE COMMUNITY</div>
+    <div class="quotes-track-outer">
+      <div class="quotes-track" id="quoteTrack"></div>
     </div>
   </div>
 </div>
@@ -1046,20 +1053,22 @@ function pbInit() {
   resizePB();
   const cx = PBW/2;
   ball = { x:cx, y:PBH-120, vx:0, vy:-8, r:9, launched:false };
-  // Flippers
+  // Flippers: lx/rx = pivot point (inner edge), ly/ry = y, lw/rw = length
+  // Left flipper pivots from its RIGHT (inner) end, extends LEFT
+  // Right flipper pivots from its LEFT (inner) end, extends RIGHT
   flippers = {
-    lx: PBW*0.28, ly: PBH-55, lw:56,
-    rx: PBW*0.72, ry: PBH-55, rw:56
+    lx: cx - 14, ly: PBH-60, lw:60,   // pivot = inner right end of left flipper
+    rx: cx + 14, ry: PBH-60, rw:60    // pivot = inner left end of right flipper
   };
-  // Bumpers
+  // Bumpers — all coords relative to cx so they scale with canvas width
   bumpers = [
-    {x:cx-60, y:160, r:22, col:'#f7931a', lbl:'₿', pts:500, flash:0, type:'btc'},
-    {x:cx+60, y:140, r:22, col:'#7c3aed', lbl:'M', pts:200, flash:0, type:'moto'},
-    {x:cx, y:200, r:22, col:'#10b981', lbl:'P', pts:100, flash:0, type:'pill'},
-    {x:cx-100, y:240, r:18, col:'#ec4899', lbl:'🐱', pts:1000, flash:0, type:'cat'},
-    {x:cx+100, y:240, r:18, col:'#ec4899', lbl:'🐱', pts:1000, flash:0, type:'cat'},
-    {x:cx-40, y:300, r:16, col:'#3b82f6', lbl:'OP', pts:150, flash:0, type:'op'},
-    {x:cx+40, y:300, r:16, col:'#3b82f6', lbl:'20', pts:150, flash:0, type:'op'},
+    {x:cx,      y:130, r:22, col:'#f7931a', lbl:'₿',  pts:500,  flash:0, type:'btc'},
+    {x:cx-70,   y:180, r:22, col:'#7c3aed', lbl:'M',  pts:200,  flash:0, type:'moto'},
+    {x:cx+70,   y:180, r:22, col:'#10b981', lbl:'P',  pts:100,  flash:0, type:'pill'},
+    {x:cx-110,  y:260, r:18, col:'#ec4899', lbl:'🐱', pts:1000, flash:0, type:'cat'},
+    {x:cx+110,  y:260, r:18, col:'#ec4899', lbl:'🐱', pts:1000, flash:0, type:'cat'},
+    {x:cx-40,   y:330, r:16, col:'#3b82f6', lbl:'OP', pts:150,  flash:0, type:'op'},
+    {x:cx+40,   y:330, r:16, col:'#3b82f6', lbl:'20', pts:150,  flash:0, type:'op'},
   ];
   // Targets (side triangles)
   targets = [
@@ -1152,10 +1161,12 @@ function pbUpdate() {
   });
 
   // Flippers
-  const lAngle = leftFlip ? -0.45 : 0.35;
-  const rAngle = rightFlip ? -Math.PI+0.45 : -Math.PI-0.35;
-  checkFlipper(flippers.lx - flippers.lw/2, flippers.ly, flippers.lw, lAngle, 1);
-  checkFlipper(flippers.rx + flippers.rw/2, flippers.ry, flippers.rw, rAngle, -1);
+  // Left: pivot at lx (inner/right end), extends LEFT. Rest=down-left, Active=up-left
+  const lAngle = leftFlip ? Math.PI + 0.4 : Math.PI - 0.32;
+  // Right: pivot at rx (inner/left end), extends RIGHT. Rest=down-right, Active=up-right  
+  const rAngle = rightFlip ? -0.4 : 0.32;
+  checkFlipper(flippers.lx, flippers.ly, flippers.lw, lAngle);
+  checkFlipper(flippers.rx, flippers.ry, flippers.rw, rAngle);
 
   // Multiplier decay
   if(multTimer > 0) { multTimer--; } else { mult = Math.max(1, mult - 0.005); updatePBUI(); }
@@ -1171,15 +1182,18 @@ function pbUpdate() {
   }
 }
 
-function checkFlipper(px, py, len, angle, dir) {
-  const fx = px + Math.cos(angle)*len*dir;
+function checkFlipper(px, py, len, angle) {
+  const fx = px + Math.cos(angle)*len;
   const fy = py + Math.sin(angle)*len;
   const dx = ball.x-px, dy = ball.y-py;
-  const t = Math.max(0, Math.min(1, (dx*(fx-px)+dy*(fy-py))/(len*len)));
-  const cx = px+t*(fx-px), cy = py+t*(fy-py);
+  const ex = fx-px, ey = fy-py;
+  const lenSq = ex*ex+ey*ey;
+  const t = Math.max(0, Math.min(1, (dx*ex+dy*ey)/lenSq));
+  const cx = px+t*ex, cy = py+t*ey;
   const distSq = (ball.x-cx)**2+(ball.y-cy)**2;
   if(distSq < (ball.r+5)**2) {
-    const nx=(ball.x-cx)/Math.sqrt(distSq), ny=(ball.y-cy)/Math.sqrt(distSq);
+    const dist = Math.sqrt(distSq)||1;
+    const nx=(ball.x-cx)/dist, ny=(ball.y-cy)/dist;
     const spd = Math.sqrt(ball.vx**2+ball.vy**2);
     ball.vx = nx * Math.max(spd*1.1, 8);
     ball.vy = ny * Math.max(spd*1.1, 8) - 2;
@@ -1229,8 +1243,10 @@ function pbDraw() {
     gc.shadowBlur=0; gc.restore();
   });
   // Flippers
-  drawFlipper(flippers.lx-flippers.lw/2, flippers.ly, flippers.lw, leftFlip?-0.45:0.35, 1);
-  drawFlipper(flippers.rx+flippers.rw/2, flippers.ry, flippers.rw, rightFlip?-Math.PI+0.45:-Math.PI-0.35, -1);
+  const lDrawAngle = leftFlip ? Math.PI + 0.4 : Math.PI - 0.32;
+  const rDrawAngle = rightFlip ? -0.4 : 0.32;
+  drawFlipper(flippers.lx, flippers.ly, flippers.lw, lDrawAngle);
+  drawFlipper(flippers.rx, flippers.ry, flippers.rw, rDrawAngle);
   // Drain line
   gc.strokeStyle='rgba(255,61,90,0.3)'; gc.lineWidth=1;
   gc.beginPath();gc.moveTo(20,PBH-20);gc.lineTo(PBW-20,PBH-20);gc.stroke();
@@ -1273,14 +1289,16 @@ function pbDraw() {
   }
 }
 
-function drawFlipper(px,py,len,angle,dir) {
-  const ex=px+Math.cos(angle)*len*dir, ey=py+Math.sin(angle)*len;
+function drawFlipper(px,py,len,angle) {
+  const ex=px+Math.cos(angle)*len, ey=py+Math.sin(angle)*len;
   gc.save();
   gc.shadowColor='#7c3aed'; gc.shadowBlur=8;
   gc.strokeStyle='#a78bfa'; gc.lineWidth=9; gc.lineCap='round';
   gc.beginPath();gc.moveTo(px,py);gc.lineTo(ex,ey);gc.stroke();
   gc.strokeStyle='rgba(255,255,255,0.3)';gc.lineWidth=3;
   gc.beginPath();gc.moveTo(px,py);gc.lineTo(ex,ey);gc.stroke();
+  // pivot dot
+  gc.fillStyle='#c4b5fd'; gc.beginPath(); gc.arc(px,py,4,0,Math.PI*2); gc.fill();
   gc.shadowBlur=0;gc.restore();
 }
 
@@ -1351,6 +1369,40 @@ setInterval(()=>{
 },7000);
 
 // ══════════════════════════════════════
+// QUOTES TICKER
+// ══════════════════════════════════════
+const QUOTES = [
+  {text:"Bitcoin finally has the DeFi layer it always deserved. OP_NET changes everything.", author:"@cryptonaut_btc", tag:"Community"},
+  {text:"MotoSwap is the first true AMM on Bitcoin L1 — no bridges, no wrapping, pure Bitcoin.", author:"@defi_maxi", tag:"MotoSwap"},
+  {text:"Staking my MotoCats and earning real yield directly on Bitcoin. This is the future.", author:"@nft_rider99", tag:"MotoCats"},
+  {text:"OP_20 tokens on Bitcoin L1 are a paradigm shift. AssemblyScript smart contracts are live.", author:"@buildonbtc", tag:"Dev"},
+  {text:"The MotoSwap liquidity pools are growing fast. 38% APY with real Bitcoin security beneath.", author:"@yield_farmer_btc", tag:"DeFi"},
+  {text:"No more ETH gas wars. OP_NET brings DeFi home — to Bitcoin, where it belongs.", author:"@satoshi_descendent", tag:"Community"},
+  {text:"MotoCats NFTs with on-chain utility and real yield. Finally an NFT project that delivers.", author:"@nft_defi_degen", tag:"MotoCats"},
+  {text:"OP_NET's cryptographic proof system means every transaction is verifiable on Bitcoin's chain.", author:"@btc_security_nerd", tag:"Tech"},
+  {text:"The $MOTO token ecosystem is one of the most thoughtfully designed tokenomics in Bitcoin DeFi.", author:"@tokenomics_pro", tag:"MOTO"},
+  {text:"MotoChef farming rewards with Bitcoin-level security? That's not DeFi — that's DeFi done right.", author:"@chef_btc", tag:"Farm"},
+  {text:"Building on OP_NET feels like building on Ethereum circa 2020 — except it's Bitcoin.", author:"@dev_on_btc", tag:"Dev"},
+  {text:"The OP_WALLET extension makes interacting with Bitcoin smart contracts as easy as MetaMask.", author:"@ux_defi", tag:"Wallet"},
+  {text:"DeFiBible is the resource the Bitcoin DeFi ecosystem needed. Everything in one place.", author:"@knowledge_seeker", tag:"Docs"},
+  {text:"Cross-chain is overrated. Native Bitcoin DeFi with OP_NET is the real endgame.", author:"@btc_maximalist_defi", tag:"Community"},
+  {text:"Swapping OP_20 tokens on MotoSwap with 0.3% fees and Bitcoin finality. No compromise.", author:"@low_fee_trader", tag:"MotoSwap"},
+];
+
+function buildQuotes() {
+  const track = document.getElementById('quoteTrack');
+  if(!track) return;
+  // Double for seamless loop
+  const all = [...QUOTES, ...QUOTES];
+  track.innerHTML = all.map(q => `
+    <div class="quote-card">
+      <div class="quote-text">${q.text}</div>
+      <div class="quote-author"><em>${q.author}</em> · ${q.tag}</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════
 // INIT
 // ══════════════════════════════════════
 window.addEventListener('resize',()=>{resizePB();if(pbState==='idle')pbDraw();});
@@ -1361,6 +1413,7 @@ loadMotoChart('7');
 pbInit();
 pbDraw();
 renderPbLB();
+buildQuotes();
 </script>
 </body>
 </html>
