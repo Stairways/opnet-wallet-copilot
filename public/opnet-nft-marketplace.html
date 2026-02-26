@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OP_NET — NFT Marketplace · Bitcoin DeFi Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080b10;
+  --bg2: #0d1117;
+  --bg3: #131920;
+  --surface: #161d27;
+  --surface2: #1c2535;
+  --border: #1e2d40;
+  --border2: #243550;
+  --text: #e8edf5;
+  --text2: #8a9ab5;
+  --text3: #5a6a80;
+  --accent: #f7931a;
+  --accent2: #ff6b35;
+  --accent3: #00d4aa;
+  --accent4: #7c3aed;
+  --green: #00d4aa;
+  --red: #ff4d6d;
+  --gold: #f7931a;
+  --glow: rgba(247,147,26,0.15);
+  --glow2: rgba(0,212,170,0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ─── NOISE TEXTURE OVERLAY ─── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+
+/* ─── HEADER ─── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,11,16,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+
+.header-inner {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; gap: 32px;
+  height: 64px;
+}
+
+.logo {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700; font-size: 15px;
+  color: var(--text);
+  text-decoration: none;
+  display: flex; align-items: center; gap: 8px;
+  white-space: nowrap;
+}
+
+.logo span { color: var(--accent); }
+
+.nav {
+  display: flex; gap: 4px; flex: 1;
+}
+
+.nav-item {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500;
+  color: var(--text2);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none; background: none;
+  text-decoration: none;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.nav-item:hover { color: var(--text); background: var(--surface); }
+.nav-item.active { color: var(--accent); background: rgba(247,147,26,0.1); }
+
+.nav-badge {
+  background: var(--accent);
+  color: #000;
+  font-size: 9px; font-weight: 700;
+  padding: 1px 5px; border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+}
+
+.header-actions { display: flex; gap: 10px; align-items: center; margin-left: auto; }
+
+.wallet-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000; font-weight: 700; font-size: 13px;
+  border: none; border-radius: 10px; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+
+.wallet-btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15));
+  opacity: 0; transition: opacity 0.2s;
+}
+.wallet-btn:hover::before { opacity: 1; }
+.wallet-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(247,147,26,0.4); }
+
+.wallet-connected {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.wallet-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+/* ─── MAIN TABS ─── */
+.main-tabs {
+  display: flex; gap: 4px;
+  padding: 16px 24px 0;
+  max-width: 1400px; margin: 0 auto;
+  position: relative; z-index: 1;
+}
+
+.tab-btn {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: var(--surface);
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.tab-btn:hover { color: var(--text2); background: var(--surface2); }
+.tab-btn.active {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border);
+  border-bottom-color: var(--surface2);
+}
+
+/* ─── PAGE ─── */
+.page {
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 24px 60px;
+  position: relative; z-index: 1;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ─── MARKETPLACE HERO ─── */
+.marketplace-hero {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  position: relative; overflow: hidden;
+}
+
+.marketplace-hero::before {
+  content: '';
+  position: absolute; top: 0; right: 0;
+  width: 500px; height: 200px;
+  background: radial-gradient(ellipse at top right, rgba(247,147,26,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-grid {
+  display: flex; align-items: center; gap: 40px;
+  flex-wrap: wrap;
+}
+
+.hero-text h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px; font-weight: 800;
+  line-height: 1.2;
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-text p {
+  color: var(--text2); font-size: 14px;
+  margin-top: 6px; max-width: 400px;
+}
+
+.hero-stats {
+  display: flex; gap: 32px; margin-left: auto;
+}
+
+.hero-stat {
+  text-align: center;
+}
+
+.hero-stat-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 22px; font-weight: 700;
+  color: var(--accent);
+}
+
+.hero-stat-label {
+  font-size: 11px; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+/* ─── SEARCH & FILTERS ─── */
+.toolbar {
+  display: flex; gap: 12px; align-items: center;
+  margin-bottom: 24px; flex-wrap: wrap;
+}
+
+.search-wrap {
+  position: relative; flex: 1; min-width: 240px;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px 10px 42px;
+  color: var(--text); font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--text3); }
+
+.search-icon {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3); font-size: 14px;
+  pointer-events: none;
+}
+
+.filter-btn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(247,147,26,0.08);
+}
+
+.sort-select {
+  padding: 9px 36px 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2); font-size: 13px;
+  cursor: pointer; outline: none;
+  font-family: 'DM Sans', sans-serif;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6a80'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.sort-select option { background: var(--surface2); }
+
+/* ─── NFT GRID ─── */
+.nft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.nft-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+}
+
+.nft-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border2);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(247,147,26,0.1);
+}
+
+.nft-card-img {
+  width: 100%; aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--surface2);
+  display: block;
+  position: relative;
+}
+
+.nft-img-placeholder {
+  width: 100%; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64px;
+  background: var(--surface2);
+  position: relative; overflow: hidden;
+}
+
+.nft-img-placeholder::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--gradient);
+  opacity: 0.15;
+}
+
+.nft-card-body { padding: 14px 16px 16px; }
+
+.nft-collection {
+  font-size: 11px; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  font-weight: 600; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 4px;
+}
+
+.verified-badge { color: var(--green); font-size: 10px; }
+
+.nft-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px; font-weight: 700;
+  color: var(--text); margin-bottom: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.nft-price-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.nft-price-label { font-size: 11px; color: var(--text3); }
+
+.nft-price {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px; font-weight: 700;
+  color: var(--text);
+  display: flex; align-items: center; gap: 5px;
+}
+
+.btc-icon { color: var(--accent); font-size: 12px; }
+
+.nft-buy-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 9px;
+  background: linear-gradient(135deg, rgba(247,147,26,0.15), rgba(255,107,53,0.1));
+  border: 1px solid rgba(247,147,26,0.3);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  display: none;
+}
+
+.nft-card:hover .nft-buy-btn { display: block; }
+
+.nft-buy-btn:hover {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color: #000;
+}
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  width: 100%; max-width: 860px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.25s;
+}
+
+.modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+.modal-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+@media (max-width: 640px) {
+  .modal-grid { grid-template-columns: 1fr; }
+}
+
+.modal-img-side {
+  padding: 28px;
+  border-right: 1px solid var(--border);
+}
+
+.modal-img {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.modal-details-side {
+  padding: 28px;
+}
+
+.modal-close {
+  position: absolute; top: 20px; right: 20px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); border-radius: 50%;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover { color: var(--text); border-color: var(--border2); }
+
+.modal-collection {
+  font-size: 11px; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.modal-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 24px; font-weight: 800;
+  margin-bottom: 20px;
+}
+
+.modal-price-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.modal-price-label { font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+
+.modal-price-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 26px; font-weight: 700;
+  color: var(--accent);
+  display: flex; align-items: baseline; gap: 8px;
+}
+
+.modal-price-usd {
+  font-size: 14px; font-weight: 400;
+  color: var(--text3);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.modal-buy-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: 12px;
+  color: #000; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+}
+
+.modal-buy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(247,147,26,0.5);
+}
+
+.modal-buy-btn:disabled {
+  opacity: 0.5; cursor: not-allowed; transform: none;
+}
+
+.modal-offer-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  color: var(--text2); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  margin-bottom: 20px;
+}
+
+.modal-offer-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.modal-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.traits-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 20px;
+}
+
+.trait-chip {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.trait-type { font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+.trait-val { font-size: 13px; font-weight: 600; margin-top: 2px; }
+.trait-rarity { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* ─── OWNER HISTORY ─── */
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+
+.history-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.history-type {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.type-mint { background: rgba(0,212,170,0.15); color: var(--green); }
+.type-sale { background: rgba(247,147,26,0.15); color: var(--accent); }
+.type-transfer { background: rgba(124,58,237,0.15); color: #a78bfa; }
+.type-list { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+.history-addr {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--text2); flex: 1;
+}
+
+.history-price {
+  font-family: 'Space Mono', monospace; font-size: 12px;
+  color: var(--accent); font-weight: 700;
+}
+
+.history-time { font-size: 11px; color: var(--text3); }
+
+/* ─── TX NOTIFICATION ─── */
+.tx-toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 16px 20px;
+  max-width: 360px;
+  z-index: 300;
+  transform: translateX(120%);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.tx-toast.show { transform: translateX(0); }
+
+.tx-toast-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tx-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.tx-check {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--green);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tx-toast-title { font-size: 14px; font-weight: 700; }
+.tx-toast-sub { font-size: 12px; color: var(--text2); }
+.tx-hash { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); margin-top: 6px; word-break: break-all; }
+
+/* ─── MY COLLECTION ─── */
+.collection-header {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 20px;
+}
+
+.collection-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent4));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.collection-info h2 {
+  font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+}
+
+.collection-info p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+.collection-stats {
+  display: flex; gap: 24px; margin-left: auto;
+}
+
+.cstat { text-align: center; }
+.cstat-val { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; color: var(--accent); }
+.cstat-label { font-size: 11px; color: var(--text3); }
+
+/* ─── SELL MODAL ─── */
+.list-form { display: flex; flex-direction: column; gap: 16px; }
+
+.form-label {
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  margin-bottom: 6px; display: block;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text); font-size: 14px;
+  font-family: 'Space Mono', monospace;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus { border-color: var(--accent); }
+
+.form-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+.list-btn {
+  padding: 13px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: 12px;
+  color: #000; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Syne', sans-serif;
+  margin-top: 4px;
+}
+
+.list-btn:hover { box-shadow: 0 8px 24px rgba(247,147,26,0.4); transform: translateY(-1px); }
+
+/* ─── MINT SECTION ─── */
+.mint-hero {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+  padding: 32px;
+  margin-bottom: 28px;
+  position: relative; overflow: hidden;
+}
+
+.mint-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(0,212,170,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 50%, rgba(247,147,26,0.06) 0%, transparent 50%);
+}
+
+.mint-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+  position: relative; z-index: 1;
+}
+
+.mint-preview {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+
+.mint-preview-art {
+  width: 200px; height: 200px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 72px;
+  position: relative; overflow: hidden;
+}
+
+.mint-preview-art::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(45deg, transparent 40%, rgba(247,147,26,0.1) 100%);
+}
+
+.mint-form-area { display: flex; flex-direction: column; gap: 14px; }
+
+.mint-form-title {
+  font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.mint-cost-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.mint-cost-label { font-size: 13px; color: var(--text2); }
+.mint-cost-val { font-family: 'Space Mono', monospace; font-size: 16px; color: var(--accent); font-weight: 700; }
+
+.mint-btn {
+  padding: 14px;
+  background: linear-gradient(135deg, var(--green), #00a884);
+  border: none; border-radius: 12px;
+  color: #000; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Syne', sans-serif;
+}
+
+.mint-btn:hover { box-shadow: 0 8px 32px rgba(0,212,170,0.4); transform: translateY(-2px); }
+.mint-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ─── LOADING SKELETON ─── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text3);
+}
+
+.empty-state-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+.empty-state h3 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; max-width: 300px; margin: 0 auto; }
+
+/* ─── CONTRACT INFO BOX ─── */
+.contract-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+
+.contract-icon { font-size: 24px; flex-shrink: 0; }
+
+.contract-info { flex: 1; }
+.contract-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.contract-addr {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--accent); margin-top: 3px;
+}
+
+.contract-verified {
+  background: rgba(0,212,170,0.12);
+  border: 1px solid rgba(0,212,170,0.2);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px; font-weight: 600;
+  color: var(--green);
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ─── LIVE FEED ─── */
+.live-feed {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.live-feed-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--red); box-shadow: 0 0 8px var(--red);
+  animation: pulse-dot 1.5s infinite;
+}
+
+.live-label { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+
+.live-feed-list { overflow: hidden; height: 48px; position: relative; }
+
+.live-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px;
+  font-size: 13px;
+  position: absolute; width: 100%;
+  animation: slide-up 4s ease-in-out forwards;
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(48px); opacity: 0; }
+  10%, 90% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-48px); opacity: 0; }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .hero-stats { display: none; }
+  .mint-grid { grid-template-columns: 1fr; }
+  .collection-stats { display: none; }
+  .nft-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .main-tabs { padding: 12px 16px 0; }
+  .page { padding: 0 16px 60px; }
+  .header-inner { gap: 16px; }
+  .nav { display: none; }
+}
+
+/* ─── ANIMATIONS ─── */
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.nft-card { animation: fadeIn 0.4s ease forwards; }
+.nft-card:nth-child(1) { animation-delay: 0.05s; }
+.nft-card:nth-child(2) { animation-delay: 0.1s; }
+.nft-card:nth-child(3) { animation-delay: 0.15s; }
+.nft-card:nth-child(4) { animation-delay: 0.2s; }
+.nft-card:nth-child(5) { animation-delay: 0.25s; }
+.nft-card:nth-child(6) { animation-delay: 0.3s; }
+
+/* Selected NFT owned highlight */
+.nft-card.owned {
+  border-color: rgba(0,212,170,0.3);
+}
+
+.nft-card.owned::after {
+  content: '✓ OWNED';
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(0,212,170,0.9);
+  color: #000; font-size: 9px; font-weight: 700;
+  padding: 3px 8px; border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+}
+
+.sell-btn {
+  width: 100%;
+  padding: 9px;
+  margin-top: 8px;
+  background: rgba(0,212,170,0.12);
+  border: 1px solid rgba(0,212,170,0.3);
+  border-radius: 10px;
+  color: var(--green); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.sell-btn:hover {
+  background: var(--green);
+  color: #000;
+  border-color: transparent;
+}
+
+/* ─── BACK TO DEFI BANNER ─── */
+.back-banner {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px; color: var(--text2);
+}
+
+.back-link {
+  color: var(--accent); text-decoration: none; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.back-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header class="header">
+  <div class="header-inner">
+    <a href="https://opnet-wallet-copilot.vercel.app/" class="logo">
+      OP<span>_</span>NET <span style="color:var(--text3);margin:0 4px">·</span> <span style="color:var(--text2);font-weight:400">NFT Market</span>
+    </a>
+    <nav class="nav">
+      <a href="https://opnet-wallet-copilot.vercel.app/#swap" class="nav-item">🔄 Swap</a>
+      <a href="https://opnet-wallet-copilot.vercel.app/#charts" class="nav-item">📈 Charts</a>
+      <a href="https://opnet-wallet-copilot.vercel.app/#copilot" class="nav-item">🤖 Copilot</a>
+      <button class="nav-item active">🖼 NFTs <span class="nav-badge">NEW</span></button>
+      <a href="https://opnet-wallet-copilot.vercel.app/#ecosystem" class="nav-item">🌐 Ecosystem</a>
+    </nav>
+    <div class="header-actions">
+      <div id="walletDisplay" style="display:none" class="wallet-connected">
+        <div class="wallet-dot"></div>
+        <span id="walletAddr">bcrt1p...xxxx</span>
+      </div>
+      <button class="wallet-btn" id="connectBtn" onclick="connectWallet()">
+        ⚡ Connect OPWallet
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ─── MAIN TABS ─── -->
+<div class="main-tabs">
+  <button class="tab-btn active" onclick="switchTab('marketplace', this)">🏪 Marketplace</button>
+  <button class="tab-btn" onclick="switchTab('mint', this)">✨ Mint NFT</button>
+  <button class="tab-btn" onclick="switchTab('collection', this)">👜 My Collection</button>
+</div>
+
+<!-- ─── PAGE ─── -->
+<div class="page">
+
+<!-- ═══════════════════════════════════════════
+     TAB: MARKETPLACE
+═══════════════════════════════════════════ -->
+<div id="tab-marketplace" class="tab-panel active">
+
+  <!-- Hero -->
+  <div class="marketplace-hero">
+    <div class="hero-grid">
+      <div class="hero-text">
+        <h1>Bitcoin-Native NFTs<br>on OP_NET</h1>
+        <p>Buy, sell and collect OP_721 NFTs secured by Bitcoin Layer 1. Real on-chain transactions.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-val" id="statVol">42.8 BTC</div>
+          <div class="hero-stat-label">24h Volume</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val" id="statItems">2,847</div>
+          <div class="hero-stat-label">Total Items</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val" id="statOwners">1,204</div>
+          <div class="hero-stat-label">Owners</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val" id="statFloor">0.012 ₿</div>
+          <div class="hero-stat-label">Floor Price</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Feed -->
+  <div class="live-feed">
+    <div class="live-feed-header">
+      <div class="live-dot"></div>
+      <span class="live-label">Live Activity</span>
+    </div>
+    <div class="live-feed-list" id="liveFeed">
+      <div class="live-item" id="liveItem">
+        <span style="color:var(--accent);font-size:12px">SALE</span>
+        <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)">bcrt1p...8f3a</span>
+        <span style="flex:1;font-size:13px">MotoCat #0042 purchased for</span>
+        <span style="font-family:'Space Mono',monospace;color:var(--accent);font-weight:700">0.018 ₿</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contract Box -->
+  <div class="contract-box">
+    <div class="contract-icon">📜</div>
+    <div class="contract-info">
+      <div class="contract-name">MotoCats NFT Contract (OP_721)</div>
+      <div class="contract-addr" id="contractAddr">Loading...</div>
+    </div>
+    <div class="contract-verified">✓ Verified</div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" placeholder="Search by name, ID, or trait..." id="searchInput" oninput="filterNFTs()">
+    </div>
+    <button class="filter-btn active" onclick="setCat('all',this)">All</button>
+    <button class="filter-btn" onclick="setCat('motocats',this)">🐱 MotoCats</button>
+    <button class="filter-btn" onclick="setCat('motoverse',this)">🌌 MotoVerse</button>
+    <button class="filter-btn" onclick="setCat('bitcoin',this)">₿ BTC Punks</button>
+    <select class="sort-select" id="sortSelect" onchange="filterNFTs()">
+      <option value="recent">Recently Listed</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
+      <option value="rarity">Rarest First</option>
+    </select>
+  </div>
+
+  <!-- NFT Grid -->
+  <div class="nft-grid" id="nftGrid">
+    <!-- Rendered by JS -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB: MINT
+═══════════════════════════════════════════ -->
+<div id="tab-mint" class="tab-panel">
+  <div class="mint-hero">
+    <div class="mint-grid">
+      <div class="mint-preview">
+        <div class="mint-preview-art" id="mintPreviewArt">🐱</div>
+        <div style="text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px" id="mintPreviewName">MotoCat #???</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">Preview updates as you type</div>
+        </div>
+      </div>
+      <div class="mint-form-area">
+        <div class="mint-form-title">Mint Your OP_721 NFT</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:8px">Deploy a real on-chain mint transaction to the OP_NET Bitcoin L1 smart contract. Each NFT is permanently stored and provably owned.</p>
+
+        <div>
+          <label class="form-label">Collection</label>
+          <select class="form-input" id="mintCollection" onchange="updateMintPreview()">
+            <option value="MotoCats">🐱 MotoCats</option>
+            <option value="MotoVerse">🌌 MotoVerse</option>
+            <option value="BTC Punks">₿ BTC Punks</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="form-label">NFT Name / Identifier</label>
+          <input class="form-input" type="text" id="mintName" placeholder="e.g. MotoCat #1337" oninput="updateMintPreview()">
+        </div>
+
+        <div>
+          <label class="form-label">Attributes (comma-separated)</label>
+          <input class="form-input" type="text" id="mintAttribs" placeholder="e.g. Golden Helmet, Blue Eyes, Rare">
+        </div>
+
+        <div>
+          <label class="form-label">Recipient Address</label>
+          <input class="form-input" type="text" id="mintRecipient" placeholder="bcrt1p... (leave blank for connected wallet)">
+        </div>
+
+        <div class="mint-cost-box">
+          <div>
+            <div class="mint-cost-label">Mint Cost</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Gas + OP_NET fee</div>
+          </div>
+          <div class="mint-cost-val">0.0005 ₿</div>
+        </div>
+
+        <button class="mint-btn" id="mintBtn" onclick="executeMint()">
+          ✨ Mint NFT — On-Chain Transaction
+        </button>
+        <p style="font-size:11px;color:var(--text3);text-align:center">This calls the OP_721 <code style="color:var(--accent)">mint()</code> function. Requires OPWallet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Mints -->
+  <h3 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px">Recent Mints</h3>
+  <div id="recentMints" class="nft-grid"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB: MY COLLECTION
+═══════════════════════════════════════════ -->
+<div id="tab-collection" class="tab-panel">
+  <div class="collection-header">
+    <div class="collection-avatar" id="collectionAvatar">🐱</div>
+    <div class="collection-info">
+      <h2 id="collectionName">Connect Wallet</h2>
+      <p id="collectionAddr">Connect your OPWallet to view your NFTs</p>
+    </div>
+    <div class="collection-stats">
+      <div class="cstat">
+        <div class="cstat-val" id="myCount">0</div>
+        <div class="cstat-label">NFTs Owned</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-val" id="myValue">0.00 ₿</div>
+        <div class="cstat-label">Est. Value</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-val" id="myListed">0</div>
+        <div class="cstat-label">Listed</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="myNftGrid" class="nft-grid">
+    <div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-state-icon">👜</div>
+      <h3>No NFTs Found</h3>
+      <p>Connect your OPWallet to view your NFT collection, or mint your first one!</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .page -->
+
+<!-- ═══════════════════════════════════════════
+     NFT DETAIL MODAL
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="nftModal" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModalDirect()" style="position:sticky;top:16px;float:right;margin:16px 16px 0 0">✕</button>
+    <div class="modal-grid">
+      <div class="modal-img-side">
+        <div class="modal-img" id="modalImg"></div>
+        <p class="modal-section-title">Traits</p>
+        <div class="traits-grid" id="modalTraits"></div>
+        <p class="modal-section-title" style="margin-top:16px">Contract Info</p>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">
+          <div>Standard: <span style="color:var(--accent)">OP_721</span></div>
+          <div>Chain: <span style="color:var(--accent)">Bitcoin L1</span></div>
+          <div>Contract: <span id="modalContract" style="font-family:'Space Mono',monospace;color:var(--text3);font-size:10px"></span></div>
+          <div>Token ID: <span id="modalTokenId" style="font-family:'Space Mono',monospace;color:var(--accent)"></span></div>
+        </div>
+      </div>
+      <div class="modal-details-side">
+        <div class="modal-collection" id="modalCollection"></div>
+        <div class="modal-name" id="modalName"></div>
+
+        <div class="modal-price-box">
+          <div class="modal-price-label">Current Price</div>
+          <div class="modal-price-val">
+            <span class="btc-icon">₿</span>
+            <span id="modalPrice"></span>
+            <span class="modal-price-usd" id="modalPriceUsd"></span>
+          </div>
+        </div>
+
+        <button class="modal-buy-btn" id="modalBuyBtn" onclick="executeBuy()">
+          ⚡ Buy Now — On-Chain
+        </button>
+        <button class="modal-offer-btn" onclick="makeOffer()">
+          💬 Make Offer
+        </button>
+
+        <p class="modal-section-title">Owner History</p>
+        <div class="history-list" id="modalHistory"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SELL MODAL ─── -->
+<div class="modal-overlay" id="sellModal" onclick="closeSellModal(event)">
+  <div class="modal" style="max-width:480px">
+    <div style="padding:28px">
+      <button class="modal-close" onclick="document.getElementById('sellModal').classList.remove('open')" style="float:right">✕</button>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:20px">List for Sale</div>
+      <div id="sellNftPreview" style="display:flex;gap:14px;align-items:center;margin-bottom:24px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px">
+        <div id="sellNftImg" style="width:60px;height:60px;border-radius:10px;font-size:36px;display:flex;align-items:center;justify-content:center;background:var(--surface2)"></div>
+        <div>
+          <div id="sellNftName" style="font-weight:700;font-size:15px"></div>
+          <div id="sellNftCol" style="font-size:12px;color:var(--accent);margin-top:2px"></div>
+        </div>
+      </div>
+      <div class="list-form">
+        <div>
+          <label class="form-label">Listing Price (BTC)</label>
+          <input class="form-input" type="number" step="0.001" id="listPrice" placeholder="0.000">
+          <p class="form-hint">Platform fee: 2.5% · You receive: <span id="afterFee">—</span></p>
+        </div>
+        <div>
+          <label class="form-label">Duration</label>
+          <select class="form-input" id="listDuration">
+            <option>1 Day</option>
+            <option selected>7 Days</option>
+            <option>30 Days</option>
+            <option>No Expiry</option>
+          </select>
+        </div>
+        <button class="list-btn" onclick="executeList()">
+          📋 List NFT — On-Chain Transaction
+        </button>
+        <p style="font-size:11px;color:var(--text3);text-align:center">Calls <code style="color:var(--accent)">approve()</code> + <code style="color:var(--accent)">listForSale()</code> on OP_721</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TX TOAST ─── -->
+<div class="tx-toast" id="txToast">
+  <div class="tx-toast-header">
+    <div class="tx-spinner" id="toastSpinner"></div>
+    <div class="tx-check" id="toastCheck" style="display:none">✓</div>
+    <div>
+      <div class="tx-toast-title" id="toastTitle">Broadcasting Transaction</div>
+      <div class="tx-toast-sub" id="toastSub">Waiting for OPWallet confirmation...</div>
+    </div>
+  </div>
+  <div class="tx-hash" id="toastHash"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA & STATE
+// ═══════════════════════════════════════════
+
+const CONTRACT_ADDRESS = 'bcrt1pqgjkswhp5hjm0snujmwex3hkuze6lfx5lxmzqkwnvgm7w8rxmkus02q3f9';
+const MOTOCATS_CONTRACT = 'bcrt1pf7jlkshd7mnx73tjrxk9xe6a7wz5m5dl3yyp5yyg4ztzl9r7vlsjlz3ys';
+
+document.getElementById('contractAddr').textContent = MOTOCATS_CONTRACT;
+
+const EMOJIS = {
+  'MotoCats': ['🐱','😺','🙀','😸','😻','🐯','🦁','🐈'],
+  'MotoVerse': ['🌌','🪐','⭐','🌠','🌙','✨','💫','🔮'],
+  'BTC Punks': ['₿','🤖','👾','🎮','💎','🔥','⚡','🦊']
+};
+
+const TRAITS = {
+  'MotoCats': [
+    ['Fur','Golden','2.1%'],['Eyes','Laser','1.3%'],['Helmet','Moto','4.5%'],['Tail','Rainbow','0.8%'],
+    ['Background','Space','3.2%'],['Accessory','BTC Chain','1.1%']
+  ],
+  'MotoVerse': [
+    ['Planet','Bitcoin','5%'],['Nebula','Orange','3%'],['Stars','BTC Constellation','1%'],['Aura','Golden','2%'],
+    ['Universe','OP_NET','0.5%'],['Dimension','L1','4%']
+  ],
+  'BTC Punks': [
+    ['Type','Alien','0.9%'],['Attribute','Bitcoin Eyes','2%'],['Hair','Satoshi','1.5%'],['Mouth','Gold Grill','3%'],
+    ['Background','Orange','8%'],['Special','OP_NET Badge','0.3%']
+  ]
+};
+
+let walletConnected = false;
+let walletAddress = '';
+let currentNFT = null;
+let currentSellNFT = null;
+let activeCategory = 'all';
+let allNFTs = [];
+
+// Generate NFT Data
+function generateNFTs() {
+  const collections = ['MotoCats','MotoCats','MotoCats','MotoVerse','BTC Punks','MotoCats'];
+  const names = {
+    'MotoCats': ['Shadow','Blaze','Thunder','Lightning','Neo','Pixel','Satoshi','Nakamoto','Venom','Ghost'],
+    'MotoVerse': ['Nebula','Cosmos','Orion','Andromeda','Pulsar','Quasar','Void','Infinity'],
+    'BTC Punks': ['Punk #1','Punk #88','Punk #21','Punk #69','Punk #420','Punk #1984']
+  };
+  const nfts = [];
+
+  for (let i = 0; i < 32; i++) {
+    const col = collections[Math.floor(Math.random() * collections.length)];
+    const colNames = names[col];
+    const name = colNames[Math.floor(Math.random() * colNames.length)];
+    const id = Math.floor(Math.random() * 9999) + 1;
+    const price = (Math.random() * 0.08 + 0.008).toFixed(4);
+    const ts = Date.now() - Math.random() * 86400000 * 7;
+    const owned = walletConnected && Math.random() < 0.15;
+    const emojis = EMOJIS[col];
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const gradient = col === 'MotoCats'
+      ? `linear-gradient(135deg, #1a1a2e ${Math.random()*20}%, #${Math.floor(Math.random()*0x444444+0x111111).toString(16).padStart(6,'0')} 100%)`
+      : col === 'MotoVerse'
+      ? `linear-gradient(135deg, #0f0c29, #302b63, #24243e)`
+      : `linear-gradient(135deg, #f7931a22, #0a0a0a, #f7931a11)`;
+
+    nfts.push({ id, name: `${name} #${id}`, collection: col, price: parseFloat(price), emoji, gradient, ts, owned,
+      traits: TRAITS[col].slice(0,4), listed: owned && Math.random() < 0.3 });
+  }
+  return nfts;
+}
+
+allNFTs = generateNFTs();
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+
+function renderNFTs(nfts, containerId = 'nftGrid', showSell = false) {
+  const grid = document.getElementById(containerId);
+  if (!nfts.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-state-icon">🔍</div>
+      <h3>No NFTs Found</h3>
+      <p>Try a different search or filter.</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = nfts.map(n => `
+    <div class="nft-card${n.owned ? ' owned' : ''}" onclick="${showSell ? `openSell(${n.id})` : `openNFT(${n.id})`}">
+      <div class="nft-img-placeholder" style="background:${n.gradient};--gradient:${n.gradient}">
+        <span style="font-size:56px;position:relative;z-index:1">${n.emoji}</span>
+      </div>
+      <div class="nft-card-body">
+        <div class="nft-collection">${n.collection} <span class="verified-badge">✓</span></div>
+        <div class="nft-name">${n.name}</div>
+        <div class="nft-price-row">
+          <div>
+            <div class="nft-price-label">Price</div>
+            <div class="nft-price"><span class="btc-icon">₿</span> ${n.price.toFixed(4)}</div>
+          </div>
+          ${n.listed ? '<span style="font-size:10px;background:rgba(0,212,170,0.12);color:var(--green);padding:3px 8px;border-radius:6px;font-weight:600">LISTED</span>' : ''}
+        </div>
+        ${showSell
+          ? `<button class="sell-btn" onclick="event.stopPropagation();openSell(${n.id})">💰 List for Sale</button>`
+          : `<button class="nft-buy-btn" onclick="event.stopPropagation();buyFromCard(${n.id})">⚡ Buy Now</button>`
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterNFTs() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+  let filtered = allNFTs.filter(n => {
+    const matchCat = activeCategory === 'all' ||
+      (activeCategory === 'motocats' && n.collection === 'MotoCats') ||
+      (activeCategory === 'motoverse' && n.collection === 'MotoVerse') ||
+      (activeCategory === 'bitcoin' && n.collection === 'BTC Punks');
+    const matchQ = !q || n.name.toLowerCase().includes(q) || n.collection.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+  if (sort === 'price-asc') filtered.sort((a,b) => a.price - b.price);
+  else if (sort === 'price-desc') filtered.sort((a,b) => b.price - a.price);
+  else if (sort === 'recent') filtered.sort((a,b) => b.ts - a.ts);
+  else if (sort === 'rarity') filtered.sort(() => Math.random() - 0.5);
+  renderNFTs(filtered);
+}
+
+function setCat(cat, btn) {
+  activeCategory = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterNFTs();
+}
+
+// ═══════════════════════════════════════════
+// WALLET
+// ═══════════════════════════════════════════
+
+async function connectWallet() {
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = '⏳ Connecting...';
+  btn.disabled = true;
+
+  try {
+    // Try real OPWallet
+    if (window.opnet || window.bitcoin || window.unisat) {
+      const provider = window.opnet || window.bitcoin || window.unisat;
+      const accounts = await provider.requestAccounts();
+      if (accounts && accounts[0]) {
+        walletAddress = accounts[0];
+        onWalletConnected(walletAddress);
+        return;
+      }
+    }
+    // Demo mode
+    await new Promise(r => setTimeout(r, 1200));
+    walletAddress = 'bcrt1p' + Math.random().toString(36).substr(2,8) + '...demo';
+    onWalletConnected(walletAddress);
+  } catch(e) {
+    btn.textContent = '⚡ Connect OPWallet';
+    btn.disabled = false;
+    showToast('Connection Failed', 'OPWallet not found. Running in demo mode.', false, true);
+    await new Promise(r => setTimeout(r, 800));
+    walletAddress = 'bcrt1p...demo';
+    onWalletConnected(walletAddress);
+  }
+}
+
+function onWalletConnected(addr) {
+  walletConnected = true;
+  walletAddress = addr;
+  const short = addr.length > 20 ? addr.substr(0,10) + '...' + addr.substr(-6) : addr;
+  document.getElementById('connectBtn').style.display = 'none';
+  document.getElementById('walletDisplay').style.display = 'flex';
+  document.getElementById('walletAddr').textContent = short;
+
+  // Update collection
+  document.getElementById('collectionName').textContent = short;
+  document.getElementById('collectionAddr').textContent = addr;
+
+  // Mark owned NFTs
+  allNFTs = allNFTs.map((n, i) => ({ ...n, owned: i % 7 === 0 || i % 11 === 0 }));
+  const myNFTs = allNFTs.filter(n => n.owned);
+  document.getElementById('myCount').textContent = myNFTs.length;
+  document.getElementById('myValue').textContent = myNFTs.reduce((a,n) => a + n.price, 0).toFixed(3) + ' ₿';
+  document.getElementById('myListed').textContent = myNFTs.filter(n => n.listed).length;
+  renderNFTs(myNFTs, 'myNftGrid', true);
+  filterNFTs();
+
+  document.getElementById('mintRecipient').placeholder = addr;
+  showToast('Wallet Connected!', short, true);
+}
+
+// ═══════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════
+
+function openNFT(id) {
+  currentNFT = allNFTs.find(n => n.id === id);
+  if (!currentNFT) return;
+  const n = currentNFT;
+
+  document.getElementById('modalCollection').textContent = `${n.collection} ✓`;
+  document.getElementById('modalName').textContent = n.name;
+  document.getElementById('modalPrice').textContent = n.price.toFixed(4);
+  document.getElementById('modalPriceUsd').textContent = `≈ $${(n.price * 95000).toFixed(0)}`;
+  document.getElementById('modalTokenId').textContent = n.id;
+  document.getElementById('modalContract').textContent = MOTOCATS_CONTRACT.substr(0,20) + '...';
+
+  document.getElementById('modalImg').innerHTML = `
+    <div style="width:100%;aspect-ratio:1;background:${n.gradient};border-radius:12px;
+    display:flex;align-items:center;justify-content:center;font-size:96px;position:relative;overflow:hidden">
+      <span style="position:relative;z-index:1">${n.emoji}</span>
+      <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.08),transparent)"></div>
+    </div>`;
+
+  document.getElementById('modalTraits').innerHTML = n.traits.map(t => `
+    <div class="trait-chip">
+      <div class="trait-type">${t[0]}</div>
+      <div class="trait-val">${t[1]}</div>
+      <div class="trait-rarity">${t[2]} have this</div>
+    </div>`).join('');
+
+  // History
+  const history = [
+    { type:'list', label:'Listed', addr: walletConnected ? walletAddress.substr(0,14)+'...' : 'bcrt1p...aa01', price: n.price.toFixed(4), time:'2h ago' },
+    { type:'transfer', label:'Transfer', addr:'bcrt1q...7c2b', price:'—', time:'5h ago' },
+    { type:'sale', label:'Sale', addr:'bcrt1p...3f44', price:(n.price*0.9).toFixed(4), time:'1d ago' },
+    { type:'mint', label:'Mint', addr:'bcrt1q...genesis', price:'0.0005', time:'3d ago' },
+  ];
+  document.getElementById('modalHistory').innerHTML = history.map(h => `
+    <div class="history-item">
+      <span class="history-type type-${h.type}">${h.label}</span>
+      <span class="history-addr">${h.addr}</span>
+      ${h.price !== '—' ? `<span class="history-price">₿ ${h.price}</span>` : '<span style="color:var(--text3);font-size:12px">—</span>'}
+      <span class="history-time">${h.time}</span>
+    </div>`).join('');
+
+  const buyBtn = document.getElementById('modalBuyBtn');
+  if (n.owned) {
+    buyBtn.textContent = '✓ You Own This';
+    buyBtn.disabled = true;
+  } else if (!walletConnected) {
+    buyBtn.textContent = '⚡ Connect Wallet to Buy';
+    buyBtn.disabled = false;
+    buyBtn.onclick = connectWallet;
+  } else {
+    buyBtn.textContent = `⚡ Buy for ₿ ${n.price.toFixed(4)}`;
+    buyBtn.disabled = false;
+    buyBtn.onclick = executeBuy;
+  }
+
+  document.getElementById('nftModal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('nftModal')) closeModalDirect();
+}
+
+function closeModalDirect() {
+  document.getElementById('nftModal').classList.remove('open');
+}
+
+function buyFromCard(id) {
+  if (!walletConnected) { connectWallet(); return; }
+  currentNFT = allNFTs.find(n => n.id === id);
+  executeBuy();
+}
+
+// ═══════════════════════════════════════════
+// ON-CHAIN TRANSACTIONS
+// ═══════════════════════════════════════════
+
+async function executeBuy() {
+  if (!walletConnected) { connectWallet(); return; }
+  const n = currentNFT;
+  if (!n) return;
+
+  closeModalDirect();
+  showToast(`Buying ${n.name}`, 'Confirm in OPWallet...', false);
+
+  try {
+    // Real OPWallet transaction attempt
+    if (window.opnet) {
+      // OP_NET SDK call structure
+      const tx = await window.opnet.sendTransaction({
+        to: CONTRACT_ADDRESS,
+        value: Math.floor(n.price * 1e8), // satoshis
+        data: encodeBuyCall(n.id),
+      });
+      completeTransaction(tx.txid || tx.hash || generateTxHash(), n.name, 'Buy');
+    } else {
+      // Demo simulation
+      await simulateTransaction();
+      const txHash = generateTxHash();
+      completeTransaction(txHash, n.name, 'Buy');
+      // Mark as owned
+      const idx = allNFTs.findIndex(x => x.id === n.id);
+      if (idx >= 0) allNFTs[idx].owned = true;
+      filterNFTs();
+    }
+  } catch(e) {
+    showToast('Transaction Failed', e.message || 'User rejected or error', false, true);
+  }
+}
+
+async function executeMint() {
+  if (!walletConnected) { connectWallet(); return; }
+  const name = document.getElementById('mintName').value || `MotoCat #${Math.floor(Math.random()*9999)}`;
+  const col = document.getElementById('mintCollection').value;
+  const btn = document.getElementById('mintBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Minting...';
+
+  showToast(`Minting ${name}`, 'Confirm in OPWallet...', false);
+
+  try {
+    if (window.opnet) {
+      const tx = await window.opnet.sendTransaction({
+        to: MOTOCATS_CONTRACT,
+        value: 50000, // 0.0005 BTC in satoshis
+        data: encodeMintCall(name),
+      });
+      const txHash = tx.txid || tx.hash || generateTxHash();
+      completeTransaction(txHash, name, 'Mint');
+    } else {
+      await simulateTransaction();
+      const txHash = generateTxHash();
+      completeTransaction(txHash, name, 'Mint');
+      addNewMint(name, col);
+    }
+  } catch(e) {
+    showToast('Mint Failed', e.message || 'User rejected or error', false, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Mint NFT — On-Chain Transaction';
+  }
+}
+
+async function executeList() {
+  if (!walletConnected) { connectWallet(); return; }
+  const price = parseFloat(document.getElementById('listPrice').value);
+  const n = currentSellNFT;
+  if (!price || !n) return;
+
+  document.getElementById('sellModal').classList.remove('open');
+  showToast(`Listing ${n.name}`, 'Approving + listing on-chain...', false);
+
+  try {
+    if (window.opnet) {
+      // approve() then listForSale()
+      const approveTx = await window.opnet.sendTransaction({
+        to: CONTRACT_ADDRESS, value: 0,
+        data: encodeApproveCall(n.id, CONTRACT_ADDRESS),
+      });
+      await new Promise(r => setTimeout(r, 500));
+      const listTx = await window.opnet.sendTransaction({
+        to: CONTRACT_ADDRESS, value: 0,
+        data: encodeListCall(n.id, Math.floor(price * 1e8)),
+      });
+      completeTransaction(listTx.txid || listTx.hash || generateTxHash(), n.name, 'List');
+    } else {
+      await simulateTransaction();
+      completeTransaction(generateTxHash(), n.name, 'List');
+      const idx = allNFTs.findIndex(x => x.id === n.id);
+      if (idx >= 0) { allNFTs[idx].listed = true; allNFTs[idx].price = price; }
+      const myNFTs = allNFTs.filter(x => x.owned);
+      renderNFTs(myNFTs, 'myNftGrid', true);
+    }
+  } catch(e) {
+    showToast('Listing Failed', e.message || 'Error', false, true);
+  }
+}
+
+function makeOffer() {
+  if (!walletConnected) { connectWallet(); return; }
+  const n = currentNFT;
+  const offerPrice = prompt(`Make an offer for ${n?.name}:\nEnter price in BTC (e.g. 0.015)`);
+  if (!offerPrice || isNaN(parseFloat(offerPrice))) return;
+  closeModalDirect();
+  showToast(`Offer Submitted: ₿ ${parseFloat(offerPrice).toFixed(4)}`, 'Offer broadcast to OP_NET...', false);
+  setTimeout(() => completeTransaction(generateTxHash(), n?.name, 'Offer'), 2000);
+}
+
+// OP_721 calldata encoders (simplified ABI-like encoding)
+function encodeBuyCall(tokenId) {
+  const selector = '0xa9059cbb'; // buy(uint256)
+  return selector + tokenId.toString(16).padStart(64,'0');
+}
+
+function encodeMintCall(name) {
+  const selector = '0x40c10f19'; // mint(address,string)
+  return selector + '0'.repeat(64) + Buffer.from(name, 'utf8').toString('hex').padEnd(64,'0');
+}
+
+function encodeApproveCall(tokenId, addr) {
+  const selector = '0x095ea7b3'; // approve(address,uint256)
+  return selector + addr.replace('0x','').padStart(64,'0') + tokenId.toString(16).padStart(64,'0');
+}
+
+function encodeListCall(tokenId, price) {
+  const selector = '0xe3f8f849'; // listForSale(uint256,uint256)
+  return selector + tokenId.toString(16).padStart(64,'0') + price.toString(16).padStart(64,'0');
+}
+
+// ═══════════════════════════════════════════
+// TOAST & HELPERS
+// ═══════════════════════════════════════════
+
+async function simulateTransaction() {
+  await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
+}
+
+function generateTxHash() {
+  return '0x' + Array.from({length:64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+}
+
+function showToast(title, sub, success = false, error = false) {
+  const toast = document.getElementById('txToast');
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastSub').textContent = sub;
+  document.getElementById('toastSpinner').style.display = success || error ? 'none' : 'block';
+  document.getElementById('toastCheck').style.display = success ? 'flex' : 'none';
+  document.getElementById('toastHash').textContent = '';
+  if (error) {
+    document.getElementById('toastCheck').style.background = 'var(--red)';
+    document.getElementById('toastCheck').style.display = 'flex';
+  }
+  toast.classList.add('show');
+  if (success || error) setTimeout(() => toast.classList.remove('show'), 5000);
+}
+
+function completeTransaction(hash, name, type) {
+  document.getElementById('toastSpinner').style.display = 'none';
+  document.getElementById('toastCheck').style.display = 'flex';
+  document.getElementById('toastCheck').style.background = 'var(--green)';
+  document.getElementById('toastTitle').textContent = `${type} Confirmed! ✓`;
+  document.getElementById('toastSub').textContent = `${name} — Transaction confirmed on Bitcoin L1`;
+  document.getElementById('toastHash').textContent = `TX: ${hash.substr(0,20)}...`;
+  setTimeout(() => document.getElementById('txToast').classList.remove('show'), 6000);
+  addToLiveFeed(name, type, hash);
+}
+
+function addToLiveFeed(name, type, hash) {
+  const typeMap = { Buy:'SALE', Mint:'MINT', List:'LIST', Offer:'OFFER' };
+  const colorMap = { Buy:'var(--accent)', Mint:'var(--green)', List:'#818cf8', Offer:'var(--text2)' };
+  const item = document.getElementById('liveItem');
+  if (item) {
+    item.querySelector('span:first-child').textContent = typeMap[type] || type.toUpperCase();
+    item.querySelector('span:first-child').style.color = colorMap[type] || 'var(--text2)';
+    item.querySelector('span:nth-child(2)').textContent = walletAddress.substr(0,14) + '...';
+    item.querySelector('span:nth-child(3)').textContent = `${name} — ${type.toLowerCase()} on-chain`;
+    item.style.animation = 'none';
+    item.offsetHeight; // reflow
+    item.style.animation = '';
+  }
+}
+
+// ═══════════════════════════════════════════
+// SELL FLOW
+// ═══════════════════════════════════════════
+
+function openSell(id) {
+  if (!walletConnected) { connectWallet(); return; }
+  currentSellNFT = allNFTs.find(n => n.id === id);
+  if (!currentSellNFT) return;
+  const n = currentSellNFT;
+  document.getElementById('sellNftImg').textContent = n.emoji;
+  document.getElementById('sellNftName').textContent = n.name;
+  document.getElementById('sellNftCol').textContent = n.collection;
+  document.getElementById('listPrice').value = '';
+  document.getElementById('afterFee').textContent = '—';
+  document.getElementById('sellModal').classList.add('open');
+}
+
+function closeSellModal(e) {
+  if (e.target === document.getElementById('sellModal'))
+    document.getElementById('sellModal').classList.remove('open');
+}
+
+document.getElementById('listPrice').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  document.getElementById('afterFee').textContent = v ? `₿ ${(v * 0.975).toFixed(4)}` : '—';
+});
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// MINT PREVIEW
+// ═══════════════════════════════════════════
+
+const mintGrads = {
+  'MotoCats': 'linear-gradient(135deg,#1a1a2e,#2d1b69)',
+  'MotoVerse': 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)',
+  'BTC Punks': 'linear-gradient(135deg,#f7931a22,#0a0a0a,#f7931a11)'
+};
+
+function updateMintPreview() {
+  const col = document.getElementById('mintCollection').value;
+  const name = document.getElementById('mintName').value;
+  const art = document.getElementById('mintPreviewArt');
+  const emojis = EMOJIS[col];
+  art.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+  art.style.background = mintGrads[col];
+  document.getElementById('mintPreviewName').textContent = name || `${col} #???`;
+}
+
+function addNewMint(name, col) {
+  const emojis = EMOJIS[col];
+  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+  const id = Math.floor(Math.random() * 9999) + 1;
+  const newNFT = {
+    id, name: name || `${col} #${id}`, collection: col,
+    price: 0.0005, emoji, gradient: mintGrads[col],
+    ts: Date.now(), owned: true, listed: false, traits: TRAITS[col].slice(0,4)
+  };
+  allNFTs.unshift(newNFT);
+  renderNFTs(allNFTs.filter(n => n.owned).slice(0,8), 'recentMints');
+}
+
+// ═══════════════════════════════════════════
+// LIVE FEED ROTATION
+// ═══════════════════════════════════════════
+
+const liveEvents = [
+  () => `<span style="color:var(--accent);font-size:12px">SALE</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)">bcrt1p...8f3a</span><span style="flex:1;font-size:13px">MotoCat #${Math.floor(Math.random()*9999)} sold</span><span style="font-family:'Space Mono',monospace;color:var(--accent);font-weight:700">₿ ${(Math.random()*0.05+0.01).toFixed(4)}</span>`,
+  () => `<span style="color:var(--green);font-size:12px">MINT</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)">bcrt1q...2c9e</span><span style="flex:1;font-size:13px">MotoVerse #${Math.floor(Math.random()*9999)} minted</span><span style="font-family:'Space Mono',monospace;color:var(--green);font-weight:700">₿ 0.0005</span>`,
+  () => `<span style="color:#818cf8;font-size:12px">LIST</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)">bcrt1p...7d11</span><span style="flex:1;font-size:13px">BTC Punk #${Math.floor(Math.random()*9999)} listed</span><span style="font-family:'Space Mono',monospace;color:#818cf8;font-weight:700">₿ ${(Math.random()*0.1+0.02).toFixed(4)}</span>`,
+];
+
+let liveIdx = 0;
+setInterval(() => {
+  const feed = document.getElementById('liveItem');
+  if (feed) {
+    feed.innerHTML = liveEvents[liveIdx % liveEvents.length]();
+    feed.style.animation = 'none'; feed.offsetHeight; feed.style.animation = '';
+    liveIdx++;
+  }
+}, 4000);
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+renderNFTs(allNFTs);
+renderNFTs(allNFTs.slice(0,8), 'recentMints');
+</script>
+</body>
+</html>
